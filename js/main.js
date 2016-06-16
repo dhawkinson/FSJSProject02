@@ -1,24 +1,29 @@
-debugger;
+//  This approach refrences http://web.enavu.com/tutorials/making-a-jquery-pagination-system/
+//      some of the ideas used in this program are borrowed and adapted from the tutorial
+//      the idea for using links in the pagination came from an epiphany I had studying the css
+//      I realized that anchor tags had to be involved somehow in order for selectors including
+//      .pagination li a... to be valid. So I began to explore that avenue of solution
+//      I am documenting these things so I will remember them in the future.
+//
 //  Define Global Variables
 //  ********************************************************************************
 //  ********************************************************************************
 
+var totalCount;
+var totalPages;
+var currentPage = 0;
+var stdPageCount = 10;
+var overflowCount;
+var searchHtml;
+var paginator;
+var buttonCount;
+var ButtonId;
 var firstPass = true;
-var startLoop = 0;
-var loopCount = 0;
-var loopEnd = 10;
-var totAllStudents = 0;
-var totPages = 0;
-var studentsPerPage = 10;
-var overFlowStudents = 0;
-var searchHtml = '';
-var studentSelected = false;
-var strSelected = false;
-var pageSelected = false;
-var btnCount = 0;
-var pageCount = 0;
-var pageDisplay = '';
-var buttons = '';
+var startDisplay = 0;
+var endDisplay = 9;
+//  classes of subject list
+var subjectsAll;               //  the entire list of students
+var subjectsMatchCurrPage;     //  the students to display on the current page
 
 //  Define functions
 //  ********************************************************************************
@@ -26,114 +31,111 @@ var buttons = '';
 
 function getTotals()
 {
-    totAllStudents = $(".student-list").children().length;
-    totPages = Math.ceil( totAllStudents / studentsPerPage );
-    overFlowStudents = totAllStudents - ( Math.floor( totAllStudents / studentsPerPage ) * studentsPerPage );
+    totalCount = $(".student-list").children().length;
+    totalPages = Math.ceil( totalCount / stdPageCount );
+    overflowCount = totalCount - ( Math.floor( totalCount / stdPageCount ) * stdPageCount );
+    /*$('#currentPage').val(0);
+    $('#perPageCount').val(perPageCount);*/
+
 }
 
 function buildHeadSearch()
 {
     searchHtml = '<div class="student-search">';
     searchHtml +='<input placeholder="Search for students...">';
-    searchHtml+='<button>Search</button></div>';
+    searchHtml +='<button>Search</button></div>';
 }
 
-function buildPageButtons()
+function buildPaginator()
 {
-    buttons = '<div class="pagination"><ul>';
+    //  builds all the buttons are required
+    //  1 for prev (<) page
+    //  1 for each specific page (in this case 6)
+    //  1 for next (>) page
+    //  all with links
 
-    for ( btnCount = 1; btnCount <= totPages; btnCount ++ )
-    {
-        buttons = buttons + '<li><button class="' + btnCount + '">' + btnCount + '</button></li>';
+    paginator = '<ul class="pagination"><li><a class="prevLink" href="javascript:js/main.js prevPage();">' + "<" + '</a></li>';
+    var currentLink = 0;
+    while(totalPages > currentLink){
+        paginator += '<li><a class="pageLink" href="javascript:js/main.js goToPage(' + currentLink +');" longdesc="' + currentLink +'">'+ (currentLink + 1) +'</a></li>';
+        currentLink ++;
+    }
+    paginator += '<li><a class="nextLink" href="javascript:js/main.js nextPage();">></a></li></ul>';
+}
+
+function prevPage(){
+
+    /*newPage = parseInt($('#currentPage').val()) - 1;*/
+    newPage = currentPage - 1;
+    if( $('.activePage').prev('.pageLink').length > 0 ){    //if there is an item before the current active link run the function
+        goToPage(newPage);
     }
 
-    buttons = buttons + '</ul></div>';
 }
 
-function getPageParams ()
-{
-    if ( studentSelected )            //  specific Student selected (one only)
-    {
-        startLoop = 0;
-        loopEnd = startLoop + 1;
+function nextPage(){
+    /*newPage = parseInt($('#currentPage').val()) + 1;*/
+    newPage = currentPage + 1;
+    if( $('.activePage').nextPage('.pageLink').length > 0 ){    //if there is an item after the current active link run the function
+        goToPage(newPage);
     }
-    else if ( strSelected )           //  search-string selected
-    {
-        startLoop = 0;
-    }
-    else                              //  page selected
-    {
-        pageSelected = true;
-        startLoop = ( pageCount * 10 ) - 10;
-    }
-}
-
-function buildDisplayPage()
-{
-    pageDisplay = '';
-    for ( loopCount = startLoop; loopCount < loopEnd; loopCount ++ )
-    {
-        var imageUrl = document.getElementsByTagName('img')[loopCount].getAttribute("src");
-        var studentName = document.getElementsByTagName("h3")[loopCount].textContent;
-        var studentEmail = document.getElementsByClassName("email")[loopCount].textContent;
-        var joinedDate = document.getElementsByClassName("date")[loopCount].textContent;
-
-        pageDisplay = pageDisplay + '<l1 class="student-item cf>"';
-        pageDisplay = pageDisplay + '<div class="student-details">';
-        pageDisplay = pageDisplay + '<img class="avatar" src="' + imageUrl + '">';
-        pageDisplay = pageDisplay + '<h3>' + studentName + '</h3>';
-        pageDisplay = pageDisplay + '<span class="email">' + studentEmail + '</span>' + '</div>';
-        pageDisplay = pageDisplay + '<div class="joined-details">';
-        pageDisplay = pageDisplay + '<span class="date">' + joinedDate + '</span>' + '</div></li>';
-    }
-    debugger;
-}
-
-function renderPage()
-{
-    $('.student-search').append(searchHtml);
-    $('.student-list').innerHTML = pageDisplay;     //  refresh the page content
-    $('.buttons').append(buttons);                  //  append the buttons
-
-    debugger;
 
 }
-//  Mainline Processing
-//  *********************************************************************************
-//  *********************************************************************************
-debugger;
-if ( firstPass )
-{
-    firstPass = false;
-    startLoop = 0;
-    loopEnd = 10;
-
-    getTotals();
-    buildHeadSearch();
-    buildPageButtons();
-}
-else
-{
-    //input event for search
-    var querySearch = document.querySelector("div.student-search input[Search for students...]");
-    if ( querySearch === null )
+function goToPage(pageNum){
+    //get the number of items shown per page
+    if ( pageNum < totalPages )
     {
-        studentSelected = false;
-        strSelected = false;
+        perPageCount = stdPageCount;
     }
     else
     {
-        //  logic for search
+        perPageCount = overflowCount;
     }
 
-    //  click event for page selection
-    for ( pageCount = 1; ( pageSelected === false && pageCount <= totPages  ); pageCount ++ )
-    {
-        var className = '.' + pageCount;
-        var clickElement = document.getElementsByClassName(className);
-        clickElement.addEventListener("click", getPageParams, false);
-    }
+    startPos = pageNum * stdPageCount;    //    get the element number from where to start the slice
+    endPos = startPos + perPageCount;     //    get the element number at where to end the slice
+
+    //hide all children elements of student-list, get specific items and show them
+    //$('.student-list').children().css('display', 'none').slice(startPos, endPos).css('display', 'block');
+    $('.student-list').children().hide;                 //  hide the full list of student
+    $('.student-list').slice(startPos,endPos).show;     //  show the current page slice of students
+
+    /*get the page link that has longdesc attribute of the current page and add activePage class to it 
+     and remove that class from previously active page link*/
+    $('.pageLink[longdesc=' + pageNum +']').addClass('activePage').siblings('.activePage').removeClass('activePage');
+
+    //update the current page input field  
+    //$('#currentPage').val(pageNum);
+    currentPage = pageNum;
 }
 
-buildDisplayPage();
-renderPage();
+/*function getSearchParams()
+ {
+
+ }*/
+
+//  Mainline Processing
+//  *********************************************************************************
+//  *********************************************************************************
+
+getTotals();
+buildHeadSearch();
+buildPaginator();
+debugger;
+$('.page-header').append(searchHtml);                 //    set the search capability
+
+$('.buttonGroup').html(paginator);                     //    set the page selector buttons
+
+//add activePage class to the first page link
+$('.pagination .pageLink:first').addClass('activePage');
+
+//hide all the elements inside content div
+$('.student-list').children().hide();
+
+//and show the first n (perPageCount) elements
+$('.student-list').children().slice(0, stdPageCount).show();
+
+//  input event for student search
+
+
+
