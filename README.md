@@ -1,9 +1,9 @@
 # FSJSProject02
-Treehouse Full Stack JavaScript Second Project
+Full Stack Java Script Project 02 - Treehouse TechDegree
 
 9 Steps to complete:
 
-  1. Use the filters-example.html file to guide your decision making. Using progressive enhancement, your work should affect the index.html file.
+  1. Use the filter-example.html file to guide your decision making. Using progressive enhancement, your work should affect the index.html file.
 
   2. Since only 10 students should be shown at a time, your programming needs to calculate the number of pages needed and add the appropriate number of links to the bottom of the page.
 
