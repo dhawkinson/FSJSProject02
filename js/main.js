@@ -8,6 +8,7 @@
 //  ********************************************************************************
 
 //  pagination globals
+var reset = true;
 var totalCount;
 var totalPages;
 var stdPageCount = 10;
@@ -23,9 +24,8 @@ var endDisplay = stdPageCount;
 
 //  search globals
 var patMatch = '';
-var listSource = '';
-//  the name search control div
-var searchControlHtml = '<div class="search-control"></div>'
+var listSource = 'paginationStd';
+var searchCount = 0;
 //  the ul for the search capability
 var searchUl = '<ul class="search-list"></ul>';
 
@@ -33,38 +33,57 @@ var searchUl = '<ul class="search-list"></ul>';
 //  ********************************************************************************
 //  ********************************************************************************
 
-function getTotals()    //  builds student count, total pages, last page overflow
-{
-    totalCount = $(".student-list").children().length;
-    overflowCount = totalCount - ( Math.floor( totalCount / stdPageCount ) * stdPageCount );
-    totalPages = Math.ceil( totalCount / stdPageCount );
-
-}
-
 function buildHeadSearch()      //  builds student name search box
 {
     searchButtonHtml = '<div class="student-search">';
     searchButtonHtml +='<input class="searchVal" type="text" placeholder="Search for students...">';
-    searchButtonHtml +='<button onclick="buildStudentSearch()">Search</button></div>';
+    searchButtonHtml +='<button type="button" class="nameSrch">Search</button></div>';
 }
 
-function buildPaginatorButtons()        //  builds pagination control buttons
+function buildTotals()    //  builds student count, total pages, last page overflow
+{
+    if ( reset ) {
+        totalCount = $(".student-list").children().length;
+        overflowCount = totalCount - ( Math.floor( totalCount / stdPageCount ) * stdPageCount );
+        totalPages = Math.ceil( totalCount / stdPageCount );
+        reset = false;
+    } else
+    {
+        totalCount = searchCount;
+        overflowCount = totalCount - ( Math.floor( totalCount / stdPageCount ) * stdPageCount );
+        totalPages = Math.ceil( totalCount / stdPageCount );
+    }
+
+}
+
+function buildPageButtons()           //  builds pagination control buttons
 {
     //  builds all the buttons that are required
     //  1 for prev page (<)
-    //  1 for each specific page (in this case 6)
+    //  1 for each specific page 
     //  1 for next page (>)
+    //  1 to reset (reset) and go back to page 1
 
-    paginatorHtml = '<ul class="pagination"><li class="prevLink" longdesc="<"><button type="button">' + "<" + '</button></li>';
+    paginatorHtml = '<ul class="paging"><li class="paging prevLink" longdesc="<"><button type="button">' + "<" + '</button></li>';
     var loopPage=1;
     while(totalPages >= loopPage){
-        paginatorHtml += '<li class="pageLink" longdesc="' + loopPage +'"><button type="button">' + (loopPage) +'</button></li>';
+        paginatorHtml += '<li class="paging pageLink" longdesc="' + loopPage +'"><button type="button">' + (loopPage) +'</button></li>';
         loopPage ++;
     }
-    paginatorHtml += '<li class="nextLink" longdesc=">"><button type="button">' + ">" +'</button></li></ul>';
+    paginatorHtml += '<li class="paging nextLink" longdesc=">"><button type="button">' + ">" +'</button></li>';
+
+    if ( listSource === 'paginationStd' )
+    {
+        paginatorHtml += '</ul>'
+    } else
+    {
+        //add the reset button when coming from the name search
+        paginatorHtml += '<li class="reset" longdesc="reset"><span> </span><button type="button">' + "reset" +'</button></li></ul>';
+    }
+
 }
 
-function prevPage()     //  builds "previous" page pagination control
+function prevPage()                   //  build "previous" page pagination control
 {
     var newPage = currentPage - 1;
     if( newPage > 0 ){              //  if there is an item before the current active link run the function
@@ -73,7 +92,7 @@ function prevPage()     //  builds "previous" page pagination control
 
 }
 
-function nextPage()     // build "next" page pagination control
+function nextPage()                   // build "next" page pagination control
 {
     var newPage = currentPage + 1;
     if( newPage <= totalPages ){    //  if the selection remains within the page range
@@ -81,7 +100,7 @@ function nextPage()     // build "next" page pagination control
     }
 
 }
-function goToPage(pageNum)      //  execute actual page change
+function goToPage(pageNum)            //  execute actual page change
 {
     //get the number of items shown per page
     if ( pageNum < totalPages )
@@ -109,11 +128,62 @@ function goToPage(pageNum)      //  execute actual page change
     //$('#currentPage').val(pageNum);
     currentPage = pageNum;
 }
+function resetPagination()                                     // reset pagination and return to page one
+{
+    clearPagination();
+    $('.student-list').children().removeClass("selected");     //   reset any previously select students
 
-function buildPaginationPage()      //  tailor pagination control
+    //  sets up for redisplay of page one
+    currentPage = 1;
+    startDisplay = 0;
+    reset = true;
+
+}
+
+function buildStudentSearch()       //  build name search control
+{
+    //  establish search pattern
+    var searchString = $(".searchVal").val();
+    patMatch = new RegExp(searchString,"gi");  //  for pattern/character matching, case insensitive
+
+    //  search for pattern in each child of student-list and build search-list
+    var nameList = $(".student-details h3").toArray();
+    var emailList = $(".email").toArray();
+
+    for ( var i = 0; i < $(".student-list").children().length; i++ ) {
+
+        var n = $(".student-details h3")[i].textContent.match(patMatch);
+        var e = $(".email")[i].textContent.match(patMatch);
+
+        //  if there is a match on either name or email, add to the search-list by setting class 'selected'
+        if ( n !== null || e !== null )
+        {
+            document.getElementsByClassName("student-item cf")[i].setAttribute("class", "student-item cf selected");
+        }
+
+    }
+    debugger;
+    searchCount = document.getElementsByClassName("student-item cf selected").length;   //  how many students selected?
+    if ( searchCount <= stdPageCount )
+    {
+        // we have a simple search  --  no paging involved
+        listSource = 'simpleSrch';
+    } else {
+        // we have a pagination search  --  more than will display on a page
+        reset = false;
+        currentPage = 1;
+        //  establish totals and pagination for the name search
+        listSource = 'paginationSrch';
+    }
+
+    return;     //  just to make it obvious
+
+}
+
+function buildPaginationPage()      //  tailor pagination control - standard paging
 {
     //add activePage class to the first page link
-    $('.pagination .pageLink:first').addClass('activePage');
+    $('.paging .pageLink:first').addClass('activePage');
 
     //  establish the length of the page (perPageCount) elements
 
@@ -123,46 +193,11 @@ function buildPaginationPage()      //  tailor pagination control
     else {
         endDisplay = startDisplay + stdPageCount;
     }
-    //hide the comlpete list of  elements inside content div
-    $('.student-list').children().hide();
+    $('.student-list').children().hide();                      //   hide the comlpete list of  elements inside content div
 
-    //  display the page that was built
-    listSource = 'pagination';
+    return;   //  Just to make it obvious
 
-    showPage(listSource);
 }
-
-function buildStudentSearch()       //  build name search control
-{
-    //hide the comlpete list of  elements inside content div
-    $('.student-list').children().hide();
-    //  establish search pattern
-    var searchString = $(".searchVal").val();
-    patMatch = new RegExp(searchString,"gi");  //  for pattern/character matching, case insensitive
-
-    //  search for pattern in each child of student-list and build search-list
-    var nameList = $(".student-details h3").toArray();
-    var emailList = $(".email").toArray();
-
-    for ( var i = 0; i < nameList.length; i++ ) {
-        //  strip <tags> from name and email array elements, leaving text only
-        var testName = nameList[i].textContent;
-        var testEmail = emailList[i].textContent;
-        // match on the name and email using the RegExp patMatch
-        var n = testName.match(patMatch);
-        var e = testEmail.match(patMatch);
-        //  if there is a match on either name or email, add to the search-list
-
-        if ( n !== null || e !== null ) {
-            startDisplay = i;
-            endDisplay = i + 1;
-            showPage('search')
-
-        }
-
-    }
-}
-
 
 function showPage(listSource)       //  execute page display (pagination or name search)
 {
@@ -172,32 +207,62 @@ function showPage(listSource)       //  execute page display (pagination or name
     //      if the results of name search yields multiple names the for loop in buildStudentSearch() will send it back
     //      for the subsequent names
 
-    $('.student-list').children().slice(startDisplay, endDisplay).show();
+    if ( listSource == 'paginationStd' ) {
+        $('.student-list').children().slice(startDisplay, endDisplay).show();              // standard pagination
 
-    return  //  Just to make it obvious
+    } else if ( listSource == 'simpleSrch' ) {
+        $(".selected").show();                                      // simple pattern match
+        listSource = 'paginationStd';                               //  reset for paginationStd -- no need for paging
+
+    } else {
+        $(".selected").slice(startDisplay, endDisplay).show();   // search pagination
+
+    }
+
+    return;   //  Just to make it obvious
 }
 
+function presentPage()
+{
+
+    buildPaginationPage();
+    showPage(listSource);
+
+}
+
+function clearPagination()                                     //   clear up any previous search pagination
+{
+
+    $(".paging").remove();                                     //  removes the pagination buttons
+
+}
 
 //  *********************************************************************************
 //  *********************************************************************************
-//  Mainline Processing
+//  First Pass Processing
 //  *********************************************************************************
 //  *********************************************************************************
 
-getTotals();
 buildHeadSearch();
-buildPaginatorButtons();
-//  append the search and pagination elements
+buildTotals();
+buildPageButtons();
 
+listSource = 'paginationStd';
 $('.page-header').append(searchButtonHtml);          //  set up the search capability (searchbox and button)
-$('.page').append(searchControlHtml);                //  set up for search display control
-$('.page').append(paginatorHtml);                   //  set up the page selector buttons, based on total pages (includes '<' & '>'
+$('.page').append(paginatorHtml);                    //  set up the page selector buttons, based on total pages (includes '<' & '>' & 'reset'
 
-buildPaginationPage();
+presentPage();
+
+//  *********************************************************************************
+//  *********************************************************************************
+//  click Processing
+//  *********************************************************************************
+//  *********************************************************************************
 
 //  click event for pagination
 
-$('li').click(function(){
+$('li.paging').click(function()
+{
     var selection = $(this).attr('longdesc');
     if (selection === '<' )
     {
@@ -212,9 +277,40 @@ $('li').click(function(){
         pageNum = parseInt(selection,10);
         goToPage(pageNum);
     }
-    
-    buildPaginationPage();  //  build the specifics of the pagination display
+
+    presentPage();
 });
+
+//  click event for name search
+
+$( 'button.nameSrch' ).click(function()
+{
+    debugger;
+    buildStudentSearch();                         //  populate the search list
+
+    if ( listSource === 'paginationSrch' )        //   if name search results in pagaination
+    {
+        clearPagination();                        //   remove for name search pagination
+        buildTotals();                            //   build the display totals again
+        buildPageButtons();
+        $('.page').append(paginatorHtml);                    //  set up the page selector buttons, based on total pages (includes '<' & '>' & 'reset'
+    }
+
+    presentPage();
+});
+
+//  click event for pagination reset
+
+$( 'li.reset' ).click(function()
+{
+    resetPagination();
+    buildTotals();
+    buildPageButtons();
+    $('.page').append(paginatorHtml);    //  re-estabilsh pagination buttons
+    listSource = 'paginationStd';
+    presentPage();
+});
+
 
 /*****************************************************************
     the following links to code are cross-browser fixes to prevent placeholder string values
@@ -229,40 +325,3 @@ $('li').click(function(){
     see also
     https://github.com/mathiasbynens/jquery-placeholder
 ******************************************************************/
-
-//
-//  Notes to remember why I used this approach for -- future reference
-//
-// searchButtonHtml & paginatorHtml are no mystery; they are the apparatus for executing the functionality
-// searchControlHtml gives me a <div class="search-control"> between the <ul class="student-list"> & <ul class="pagination">
-// within <div class="search-control"> have placed <ul class="search-list"></ul> which serves as the wrppper for name searches
-// I can build, .show and .remove the results of pattern matching on names without disturbing
-// either <ul class="student-list"> or <ul class="pagination">
-//
-// the process on name searches works like this:
-//      buildStudentSearch()
-//          1. establish a new pattern match (RegExp)
-//          2. gather (append) one or more students that meet the pattern match on either name or email
-//          3. if there are any names matched
-//                4. append <ul class="search-list"></ul> to .searchControl (empty wrapper)
-//                5. call showPage()
-//      showPage(listSource)
-//          1. .hide the full student list
-//          if sourceList = 'pagination'
-//              2. show the slice of page-selected students
-//          else
-//              3. .show the list of pattern matched students
-//              4. call removeSearchList()
-//      removeSearchList()
-//          1. .remove search-list                (the one just built and shown)
-//
-//******************************************************************
-//
-//  Problems solved with this approach (all of which I experienced before adopting the approach)
-//
-//      1. simplified the determination of which elements were in and which where out for display on name searches
-//      2. simplified the buiilding and releasing of elements for multiple (and unique) name searches
-//      3. simplified the ability to keep the pagination list at the bottom of (instead of above) the displayed list, through iterations
-//      4. eliminated the possibility of retaining prior name search results, through iterations
-//      5. simplified the process of preventing name search lists from "tagging along" when reverting to pagination
-
