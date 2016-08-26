@@ -37,7 +37,7 @@ function buildHeadSearch()      //  builds student name search box
 {
     searchButtonHtml = '<div class="student-search">';
     searchButtonHtml +='<input class="searchVal" type="text" placeholder="Search for students...">';
-    searchButtonHtml +='<button type="button" class="nameSrch">Search</button></div>';
+    searchButtonHtml +='<a href="#" class="btn nameSrch" longdesc="nameSrch">Search</a></div>';
 }
 
 function buildTotals()    //  builds student count, total pages, last page overflow
@@ -64,13 +64,13 @@ function buildPageButtons()           //  builds pagination control buttons
     //  1 for next page (>)
     //  1 to reset (reset) and go back to page 1
 
-    paginatorHtml = '<ul class="paging"><li class="paging prevLink" longdesc="<"><button type="button">' + "<" + '</button></li>';
+    paginatorHtml = '<ul class="paging"><li><a href="#" class="btn prevLink" longdesc="<">' + "<" + '</a></li>';
     var loopPage=1;
     while(totalPages >= loopPage){
-        paginatorHtml += '<li class="paging pageLink" longdesc="' + loopPage +'"><button type="button">' + (loopPage) +'</button></li>';
+        paginatorHtml += '<li><a href="#" class="btn pageLink" longdesc="' + loopPage +'">' + (loopPage) +'</a></li>';
         loopPage ++;
     }
-    paginatorHtml += '<li class="paging nextLink" longdesc=">"><button type="button">' + ">" +'</button></li>';
+    paginatorHtml += '<li><a href="#" class="btn nextLink" longdesc=">">' + ">" +'</a></li>';
 
     if ( listSource === 'paginationStd' )
     {
@@ -78,7 +78,7 @@ function buildPageButtons()           //  builds pagination control buttons
     } else
     {
         //add the reset button when coming from the name search
-        paginatorHtml += '<li class="reset" longdesc="reset"><span> </span><button type="button">' + "reset" +'</button></li></ul>';
+        paginatorHtml += '<li><span> </span><a href="#" class="btn reset" longdesc="reset">' + "reset" +'</a></li></ul>';
     }
 
 }
@@ -237,6 +237,63 @@ function clearPagination()                                     //   clear up any
 
 }
 
+function clickListener()
+{
+    //  *********************************************************************************
+    //  *********************************************************************************
+    //  click Processing
+    //  *********************************************************************************
+    //  *********************************************************************************
+
+    //  capture click
+    //  debugger;
+    $ ( ".page" ).on( "click", "a", function()
+    {
+        var selection = $(this).attr('longdesc');
+        debugger;
+
+        if (selection === '<' )
+        {
+            prevPage();
+        }
+        else if (selection === '>')
+        {
+            nextPage();
+        }
+        else if (parseInt(selection,10))
+        {
+            pageNum = parseInt(selection,10);
+            goToPage(pageNum);
+        }
+        else if (selection === 'reset')
+        {
+            resetPagination();
+            buildTotals();
+            buildPageButtons();
+            $('.page').append(paginatorHtml);             //  re-estabilsh pagination buttons
+            listSource = 'paginationStd';
+            presentPage();
+
+        }
+        else if (selection === 'nameSrch')
+        {
+            buildStudentSearch();                         //  populate the search list
+
+            if ( listSource === 'paginationSrch' )        //   if name search results in pagaination
+            {
+                clearPagination();                        //   remove for name search pagination
+                buildTotals();                            //   build the display totals again
+                buildPageButtons();
+                $('.page').append(paginatorHtml);         //   set up the page selector buttons, based on total pages (includes '<' & '>' & 'reset'
+            }
+
+        }
+
+        presentPage();
+
+    });
+
+}
 //  *********************************************************************************
 //  *********************************************************************************
 //  First Pass Processing
@@ -253,75 +310,4 @@ $('.page').append(paginatorHtml);                    //  set up the page selecto
 
 presentPage();
 
-//  *********************************************************************************
-//  *********************************************************************************
-//  click Processing
-//  *********************************************************************************
-//  *********************************************************************************
-
-//  click event for pagination
-
-$('li.paging').click(function()
-{
-    var selection = $(this).attr('longdesc');
-    if (selection === '<' )
-    {
-        prevPage();
-    }
-    else if (selection === '>')
-    {
-        nextPage();
-    }
-    else
-    {
-        pageNum = parseInt(selection,10);
-        goToPage(pageNum);
-    }
-
-    presentPage();
-});
-
-//  click event for name search
-
-$( 'button.nameSrch' ).click(function()
-{
-    debugger;
-    buildStudentSearch();                         //  populate the search list
-
-    if ( listSource === 'paginationSrch' )        //   if name search results in pagaination
-    {
-        clearPagination();                        //   remove for name search pagination
-        buildTotals();                            //   build the display totals again
-        buildPageButtons();
-        $('.page').append(paginatorHtml);                    //  set up the page selector buttons, based on total pages (includes '<' & '>' & 'reset'
-    }
-
-    presentPage();
-});
-
-//  click event for pagination reset
-
-$( 'li.reset' ).click(function()
-{
-    resetPagination();
-    buildTotals();
-    buildPageButtons();
-    $('.page').append(paginatorHtml);    //  re-estabilsh pagination buttons
-    listSource = 'paginationStd';
-    presentPage();
-});
-
-
-/*****************************************************************
-    the following links to code are cross-browser fixes to prevent placeholder string values
-    from appearing in form action script.
-
-    Dont know if I will need them but want to remember how to get back to them
-
-    Released under MIT license: http://www.opensource.org/licenses/mit-license.php
-    jQuery HTML5 placeholder fix.js
-
-    https://gist.github.com/hagenburger/379601
-    see also
-    https://github.com/mathiasbynens/jquery-placeholder
-******************************************************************/
+clickListener();                                    //  listen for clicks
