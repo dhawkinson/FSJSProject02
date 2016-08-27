@@ -24,7 +24,7 @@ var beginShow = 0;
 var endShow = showStdPage;
 
 //  search globals
-var searchHtml = '<div class="student-search"><input class="searchVal" type="text" placeholder="Search for students..."><a href="#" class="btn nameSrch" longdesc="nameSrch">Search</a></div>';
+var searchHtml = '<div class="student-search"><form><input class="searchVal" type="text" placeholder="Search for students..."><button class="nameSrch">Search</button></form></div>';
 var ptrnMatch = '';
 var searchToShow = 0;
 
@@ -56,9 +56,9 @@ function buildPaging()                           //     builds student count, to
     //  1 for next page (>)
     //  1 to reset (reset) and go back to page 1
 
-    $(".pageNav").remove();                    //       removes the paging buttons
+    $(".pageNav").remove();                    //   removes the paging buttons
 
-    //  establish the paging
+    //  build the paging
     pagingHtml = '<div class="pageNav"><ul class="paging"><li><a href="#" class="btn prevLink" longdesc="<">' + "<" + '</a></li>';
     var loopPage=1;
     while(totPgs >= loopPage){
@@ -69,12 +69,16 @@ function buildPaging()                           //     builds student count, to
 
     if ( eventType === 'pageSelect' )
     {
-        pagingHtml += '</ul></div>'
+        pagingHtml += '</ul></div>';
     } else
     {
         //add the reset button when coming from the name search
         pagingHtml += '<li><span> </span><a href="#" class="btn reset" longdesc="reset">' + "reset" +'</a></li></ul></div>';
     }
+
+    $('.page').append(pagingHtml);             //   inserts paging buttons, based on total pages, includes '<' & '>' & (optionally) 'reset'
+
+    return;         //Just to be obvious
 
 }
 
@@ -119,7 +123,7 @@ function goToPage(pageNum)                  //    execute actual page change
      and remove that class from previously active page link */
     $('.pageLink[longdesc=' + pageNum +']').addClass('activePage').siblings('.activePage').removeClass('activePage');
 
-    //update the current page input field  
+    //update the current page input field
     //$('#currPg').val(pageNum);
     currPg = pageNum;
 }
@@ -200,7 +204,7 @@ function showPage(eventType)          //    execute page display (paging or name
     return;   //  Just to make it obvious
 }
 
-function clickListener()
+function eventListener()
 {
     //  *********************************************************************************
     //  *********************************************************************************
@@ -236,30 +240,35 @@ function clickListener()
             //  sets up for redisplay of page one
             currPg = 1;
             beginShow = 0;
-            reset = true;
             buildPaging();
             $('.page').append(pagingHtml);                             //   re-estabilsh paging buttons
-
-        }
-        else if (selection === 'nameSrch')
-        {
-            $('.student-list').children().removeClass("selected");     //   reset any previously select students
-            buildSearchSet();                                          //   populate the search list
-
-            if ( eventType === 'searchWithPaging' )                    //   if name search results in pagaination
-            {
-                currPg = 1;
-                beginShow = 0;
-                buildPaging();                                         //   build the display totals again
-                $('.page').append(pagingHtml);                         //   set up the page selector buttons, based on total pages (includes '<' & '>' & 'reset'
-            }
 
         }
 
         showPage(eventType);
 
     });
+    console.log('trying to enter keyup function');
+    $(".searchVal").keyup(function()
+    {
+        console.log('inside of keyup function');
+        $('.student-list').children().removeClass("selected");     //   reset any previously select students
 
+        // build pattern match
+        // test pattern match
+        // gather from pattern match
+        // test for paging
+
+        buildSearchSet();
+
+        if (eventType = 'searchWithPaging') {
+            buildPaging();
+        }
+
+        showPage(eventType);
+    });
+    console.log('after keyup function');
+    debugger;
 }
 //  *********************************************************************************
 //  *********************************************************************************
@@ -268,10 +277,33 @@ function clickListener()
 //  *********************************************************************************
 
 $('.page-header').append(searchHtml);                     //  set up the search capability (searchbox and button)
-buildPaging();
 
-$('.page').append(pagingHtml);                            //  set up the page selector buttons, based on total pages (includes '<' & '>' & 'reset'
+buildPaging();
 
 showPage(eventType);
 
-clickListener();                                          //  listen for clicks
+eventListener();                                          //  listen for clicks
+//
+//  *********************************************************************************
+//  *********************************************************************************
+//  playground
+//  *********************************************************************************
+//  *********************************************************************************
+
+/*
+ else if (selection === 'nameSrch')
+ {
+ $('.student-list').children().removeClass("selected");     //   reset any previously select students
+ buildSearchSet();                                          //   populate the search list
+
+ if ( eventType === 'searchWithPaging' )                    //   if name search results in pagaination
+ {
+ currPg = 1;
+ beginShow = 0;
+ buildPaging();                                         //   build the display totals again
+ $('.page').append(pagingHtml);                         //   set up the page selector buttons, based on total pages (includes '<' & '>' & 'reset'
+ }
+
+ }
+ */
+
