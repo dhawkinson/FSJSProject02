@@ -23,11 +23,11 @@ body{
     color: #555;
 }
 
-.page-header .student-search{
+.page-header #student-search{
     float: right;
 }
 
-.page-header .student-search input{
+.page-header #student-search input{
     color: #d1d1e0;
     border-radius: 5px;
     border: 1px solid #eaeaea;
@@ -35,7 +35,7 @@ body{
     font-size: 14px;
 }
 
-.page-header .student-search button{
+.page-header #student-search button{
     border-radius: 5px;
     border: 1px solid #eaeaea;
     padding: 8px 15px;
@@ -44,11 +44,15 @@ body{
     color: #fff
 }
 
-.student-list{}
+#student-search p.noMatch {
+    margin-top: 1em;
+    text-align: center;
+    color:red;
+}
 
 .student-item{
-    margin: 0 0 20px 0;
-    padding: 0 0 20px 0;
+    margin: 0 0 15px 0;
+    padding: 0 0 15px 0;
     border-bottom: 1px solid #eaeaea;
 }
 
@@ -96,16 +100,16 @@ body{
     border-bottom: none;
 }
 
-.pagination{
-    margin: 40px 0 0 0;
+#paging {
+    margin: 20px 0 0 0;
     text-align: center;
 }
  
-.pagination li{
+#paging li{
     display: inline;
 }
 
-.pagination li a{
+#paging li a{
     border: 1px solid #eaeaea;
     border-radius: 5px;
     padding: 3px 8px;
@@ -113,8 +117,8 @@ body{
     color: #4ba6c3;
 }
 
-.pagination li a:active,
-.pagination li a:hover{
+#paging li a:active,
+#paging  li a:hover{
     background-color: #4ba6c3;
-    color: #fff;
+    color: #FFFFFF;
 }
