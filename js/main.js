@@ -1,282 +1,220 @@
-//  This approach refrences web.enavu.com/tutorials/making-a-jquery-pagination-system/
+(function () {
+    'use strict';	// this function is strict... prevents use of undeclared variables
+}());
+/*globals $:false */		//	prevent jshint from declaring $ as undefined
+//
+//  This approach started with web.enavu.com/tutorials/making-a-jquery-pagination-system/
 //      some of the ideas used in this program are borrowed and adapted from the tutorial.
 //      some come from stackoverflow.com/questions/2808189/jquery-how-to-determine-which-li-tag-was-clicked
 //      I am documenting these things so I will remember them in the future.
-//
-//  ********************************************************************************
+//      I am also documenting, for the evaluator, why I selected some functionality not expressly called for in the instructions
+
 //  ********************************************************************************
 //  Define Global Variables
 //  ********************************************************************************
-//  ********************************************************************************
 
-//  paging globals
-var totToShow;
-var totPgs;
-var showStdPage = 10;
-var showOverflow;
-var pagingHtml;
-var firstPaging;
-var firstPass = true;
-var pageNum;
-var thisShow;
-var eventType = 'stdPaging';
-// next three are initialized for first pass. They will be reset with each new selection
-var currPg = 1;
-var beginShow = 0;
-var endShow = showStdPage;
-var stop = false;
+var totToShow = 0;                                     //   The total Students to show - all pages
+var pageToShow = 0;                                    //   The total Students to show - this page
+var numPages = 0;                                      //   number of pages - derived from totTorShow
+var currPage = 1;                                      //   the current page number (initialized to page 1)
 
-//  search globals
-var searchHtml = '<div class="student-search"><input id="searchVal" type="text" placeholder="Search for students..."><button class="nameSrch">Search</button></div>';
-var ptrnMatch = '';
-var srchStr = '';
-var searchToShow = 0;
+var showOnPage = 10;                                   //   declare number of students per standard page
+var listClone =  $(".student-list > li").clone();      //   full student list clone from the <li>s
+var totAllStudents = listClone.length;                 //   total number of all Students
+
+// *********************************************************************************
+//  setup searchHtml -- slight variance from initial file
+//                      brought the <h2> element into variable so the inner HTML of the div is complete within the variable
+//                      dropped the button because I wasn't using it
+//
+var searchHtml = '<h2>Students</h2><span Id="student-search"><input class="searchVal" type="text" placeholder="Search for students...">';
+var searchStr = '';
 
 //  ********************************************************************************
-//  ********************************************************************************
-//  Define functions
-//  ********************************************************************************
+//  Define Functions
 //  ********************************************************************************
 
-function buildSearchSet()         //    build name search control
+//  click function
+
+function clickListener()
 {
-    ptrnMatch = new RegExp(srchStr,"gi");  //  for pattern/character matching, case insensitive
-
-    //  search for pattern in each child of student-list and build search-list
-    var nameList = $(".student-details h3").toArray();
-    var emailList = $(".email").toArray();
-
-    for ( var i = 0; i < $(".student-list").children().length; i++ ) {
-
-        var n = $(".student-details h3")[i].textContent.match(ptrnMatch);
-        var x = $(".email")[i].textContent;
-        var y = x.indexOf("@");
-        var e = x.substring(0,y);
-        var m = e.match(ptrnMatch);
-        //  if there is a match on either name or email, add to the search-list by setting class 'selected'
-        if ( n !== null || m !== null )
+    $(".pageNav > ul > li > a").click(function(c)       //  get the page clicked for
+    {
+        var selection = c.target.textContent;           //  value of the button clicked
+        if ( selection == '<' )                          //  Previous Page
         {
-            document.getElementsByClassName("student-item cf")[i].setAttribute("class", "student-item cf selected");
+            selection = currPage - 1;
+            if ( selection > 0 )
+            {
+                currPage = selection;
+            }
+            else
+            {
+                currPage = 1;
+            }
         }
-    }
-    //  Keep in mind - this next section is dynamic with each keystroke
-    searchToShow = document.getElementsByClassName("student-item cf selected").length;   //  how many students selected?
-    if ( searchToShow === 0 ) {
-        eventType = 'noMatches'
-    }
-    else if( searchToShow <= showStdPage )
-    {
-        eventType = 'srchNoPaging';     // simple search  --  no paging involved
-    }
-    else
-    {
-        eventType = 'srchPaging';       // we have a paging search  --  more than will display on a page
-        currPg = 1;
-        beginShow = 0;
-        endShow = showStdPage;
-    }
-    return;                             //  just to make it obvious
-}
+        else if ( selection == '>' )                     //  Next Page
+        {
+            selection = currPage + 1;
+            if ( selection <= numPages )
+            {
+                currPage = selection;
+            }
+            else
+            {
+                currPage = numPages;
+            }
+        }
+        else
+        {
+            currPage = parseInt(selection,10);          //  Specific Page
+        }
 
-function buildPagingSet()                           //     builds student count, total pages, last page overflow
+        showPage(listClone);
+
+    });
+}   //  end of click function
+
+//  Explanation of why I chose to use keypress
+//      Taken from: http://www.w3library.com/javascript/onkeypress-vs-onkeyup-and-onkeydown/
+//      KeyDown is fired when ANY key is pressed down
+//      KeyUp is fired when ANY key is released
+//      KeyPress is fired when a key is pressed and released, but ONLY fires for keys with printable characters
+//      Since Name Searching is limited to printable characters, I decided to use the specialized handler
+
+//  keypress function   --  builds pattern match for name search fed to buildPaging()
+
+function keypressListener()
 {
-    if (eventType === 'srchPaging') {            //      builds a search set
-        totToShow = searchToShow;
-        showOverflow = totToShow - ( Math.floor (totToShow / showStdPage) * showStdPage );
-        totPgs = Math.ceil (totToShow / showStdPage);
-    }
-    else                                        //      builds a full set
+    $(".search-input").keypress(function(k)
     {
-        totToShow = $ (".student-list").children ().length;
-        showOverflow = totToShow - ( Math.floor (totToShow / showStdPage) * showStdPage );
-        totPgs = Math.ceil (totToShow / showStdPage);
-    }
+        listClone.css( "opacity", 1);                                                   //  erase any lingering transparency from fadeIn function
+        $(".pageNav > ul > li > a").attr("href", "#");                                  //  reset to page 1 of pagination
+        $(".pageNav > ul > li:first-child > a").attr("class", "active");                //  first student in list
+        searchStr += k.key;                                                             //  grab text from text input field
+        //  explanation of why I used RegExp
+        //      Though not specifically required or specified
+        //      RegExp offers a more flexible style of search
+        //      in that the pattern being matched on the target element
+        //      can be present anywhere in the string
+        var ptrnMatch = new RegExp(searchStr,"gi");                                         //  for pattern/character matching, case insensitive
+        console.log( 'searchStr = '+searchStr+' ptrnMatch = '+ptrnMatch );
+        listClone.each(function(index)
+        {                   //  looping through each li element in the local list clone
+            $(this).removeAttr("id");                                                   //  clear pre-applied IDs
+            var nameText = $(this).find("h3").text();                                   //  get the name
+            var emailText = $(this).find(".email").text().substring(0,($(this).indexOf('@')));  //  get the name portion of email
+            var lookUpText = nameText + " " + emailText;                                //  concatentate for single search
+            console.log( 'lookUpText = '+lookUpText );
+            if (lookUpText.match(ptrnMatch) !== null)                                   //  if there is a match
+            {
+                $(this).attr("id", "display");                                          //  mark for disply
+            }
+        });
 
-    //  clear any previous paging
-    //  build all the buttons that are required
-    //      1 for prev page (<)
-    //      1 for each specific page
-    //      1 for next page (>)
-    //      1 to reset (reset) and go back to page 1 (only when name search reults in more than one page)
+        buildPaging(listClone);
 
-    $(".pageNav").remove();                    //   removes the paging buttons
+    });
+}     //  end of keypress function
 
-    //  build the paging buttons
-    pagingHtml = '<div class="pageNav"><ul id="paging"><li><a href="#" class="btn prevLink" longdesc="<">' + "<" + '</a></li>';
-    var loopPage=1;
-    while(totPgs >= loopPage){
-        pagingHtml += '<li><a href="#" class="btn pageLink" longdesc="' + loopPage +'">' + (loopPage) +'</a></li>';
-        loopPage ++;
-    }
-    pagingHtml += '<li><a href="#" class="btn nextLink" longdesc=">">' + ">" +'</a></li>';
+//  paging function   --  builds the paging button set from first page or keypress function
 
-    if ( eventType === 'srchPaging' )
-    {
-        //add the reset button when coming from the name search
-        pagingHtml += '<li><span> </span><a href="#" class="btn reset" longdesc="reset">' + "reset" +'</a></li></ul></div>';
-    }
-    else
-    {
-        pagingHtml += '</ul></div>';
-    }
-
-    $('.page').append(pagingHtml);             //   inserts paging buttons, based on total pages, includes '<' & '>' & (optionally) 'reset'
-
-    return;                                    //   Just to be obvious
-}
-
-function showPage(eventType)            //    execute page display (paging or name search)
+function buildPaging(clone)
 {
-    //  Two Event Types
     //
-    //      1.  stdPaging = simple page selection - (results from first pass)
-    //      2.  srchNoPaging = name search but less then 10 matches
-    //      3.  srchPaging = name search resulting in more than 10 matches
+    //****************************************
+    //  initialize
+    //****************************************
+    //
 
-    //add activePage class to the first page link
-    $('.paging .pageLink:first').addClass('activePage');
-
-    //  establish the length of the page (thisShow) elements
-
-    if (currPg === totPgs) {
-        endShow = beginShow + showOverflow;
-    }
-    else {
-        endShow = beginShow + showStdPage;
-    }
-    $('.student-list').children().hide();                      //   hide the comlpete list of  elements inside content div
-
-
-    if ( eventType === 'stdPaging' )                                      //  standard page selection
+    $(".noMatch").remove();                             // remove the noMatch message if it was appended from a previous search
+    $(".pageNav").empty();                              // clear the pagination links class div
+    // count all elements to be shown
+    totToShow = 0;
+    clone.each(function(index)
     {
-        $('.student-list').children().slice(beginShow, endShow).show();
-    }
-    else if ( eventType === 'srchNoPaging' )                             //  name search no paging (short list)
-    {
-        $(".selected").show();
-    }
-    else if ( eventType === 'srchPaging')                                //  name search with paging (long list)
-    {
-        $(".selected").slice(beginShow, endShow).show();
-    }
-    else if ( eventType === 'noMatches' )                                //  no match
-    {
-        $('.student-list').children().slice(0, 10).show();
-        $( ".pageNav" ).append("<p class='noMatch'><strong>NO MATCH FOUND</strong></p>")
-    }
+        if ($(this).attr("id") == "display")
+        {
+            $(this).attr("id", "display-"+(index));
+            totToShow +=1;                              // count the display elements
+        }
 
-    return;                            //  Just to make it obvious
+    });
+
+    // if search comes back with no results, append message to the list stating to the effect
+    if ((totToShow - 1) < 1) {
+        $("#student-search").append("<p class='noMatch'>NO MATCHES FOUND.</p>");
+    }
+    // count total number of page links required for pagination
+    //          will be = to either a function of all students
+    //          or = to a function of number of names matched
+
+    numPages = Math.ceil(totToShow/showOnPage);
+
+    //only paginate if there is more than one page
+    if (numPages > 1) {
+        var pagingHtml = '<ul id="paging"><li><a href="#">' + "<" + '</a></li>';
+        var loopPage=1;
+        while(numPages >= loopPage){
+            pagingHtml += '<li><a href="#">' + (loopPage) +'</a></li>';
+            loopPage ++;
+        }
+        pagingHtml += '<li><a href="#">' + ">" +'</a></li>';
+        pagingHtml += '</ul></div>';
+
+        // assign inner html of pagination div with constructed pagination string, 1st element class set to active
+        $(".pageNav").html(pagingHtml);
+    }
+    currPage = 1;           //  display always starts with the first page
+
+    showPage(listClone);
 }
 
-function prevPage()                            //    build "previous" page paging control
+//  display function    --  displays the results of buildPaging, either directly or through page click function
+
+function showPage(clone)                                          //  shows the pages required by buildPaging @ click function
 {
-    var newPage = currPg - 1;
-    if( newPage > 0 ){                        //  if there is an item before the current active link run the function
-        goToPage(newPage);
-    }
-    return;
+    clone.hide();                                                 //  hide everything
+    $(".student-list").html(clone);                               //  populate html with new list
+    var first = ( (currPage * 10) - 10 );                         //  set first display position
+    var last = ( first + showOnPage );                            //  set last display position
+    var refIndex = -1;                                            //  initialize
+
+    clone.each(function(index)
+    {
+        if ( $(this).attr("id") == 'display-'+index.toString() )  //  this is a possible diplay item
+        {
+            refIndex += 1;
+            if ( refIndex >= first && refIndex < last )           //  this is an actual display item
+            {
+                $(this).show().fadeIn(3000);                      //  show with 1 sec fade in
+            }
+        }
+
+    });
+
 }
+// ******************************************************
+// end of function definitions
+// ******************************************************
 
-function nextPage()                          //    build "next" page paging control
+$(".page-header").html(searchHtml);                     //  inject the name search into the header
+$(".page").append("<div class='pageNav'></div>");       //  provide a div for pagination
+
+listClone.each(function(index)
 {
-    var newPage = currPg + 1;
-    if( newPage <= totPgs ){                //  if the selection remains within the page range
-        goToPage(newPage);
-    }
-    return;
-}
+    //if ( index <= 9 ) {
+    $(this).attr("id", "display");                      //  identify all students for display
+    //}
+    totToShow = totAllStudents;                         //  set number in all pages
+    pageToShow = showOnPage;                           //  set number for first page
+});
 
-function goToPage(pageNum)                  //    execute actual page change
-{
-    //get the number of items shown per page
-    if ( pageNum < totPgs )
-    {
-        thisShow = showStdPage;
-    }
-    else
-    {
-        thisShow = showOverflow;
-    }
-
-    beginShow = (pageNum * showStdPage)-10;      //    get the element number from where to start the slice
-    endShow = beginShow + thisShow;              //    get the element number at where to end the slice
-
-    //hide all children elements of student-list, get specific items and show them
-    //$('.student-list').children().css('display', 'none').slice(startPos, endPos).css('display', 'block');
-    $('.student-list').children().hide;                 //  hide the full list of student
-    $('.student-list').slice(beginShow,endShow).show;     //  show the current page slice of students
-
-    /*  get the page link that has longdesc attribute of the current page and add activePage class to it
-     and remove that class from previously active page link */
-    $('.pageLink[longdesc=' + pageNum +']').addClass('activePage').siblings('.activePage').removeClass('activePage');
-
-    currPg = pageNum;
-    return;                 //  just to be obvious
-}
-
-function keydownListener(k)
-{
-
-    $('.student-list').children().removeClass("selected");     //   reset any previously select students
-
-    // build pattern match
-    srchStr += k.key;                                          //   capture key value before calling any function
-
-    // test pattern match
-    // gather from pattern match
-    // test for paging
-
-    buildSearchSet();
-    buildPagingSet();
-    showPage(eventType);
-
-};
-
-function clickListener(c)
-{
-    srchStr = '';                      //  any click event resets the name search string
-    eventType = 'stdPaging';
-    var selection = c.target.textContent;
-
-    if (selection === '<' )
-    {
-        prevPage();
-    }
-    else if (selection === '>')
-    {
-        nextPage();
-    }
-    else if (parseInt(selection,10))
-    {
-        pageNum = parseInt(selection,10);
-        goToPage(pageNum);
-    }
-    else if (selection === 'reset')
-    {
-        $('.student-list').children().removeClass("selected");     //   reset any previously select students
-
-        //  sets up for redisplay of page one
-        currPg = 1;
-        beginShow = 0;
-        buildPagingSet();
-        $('.page').append(pagingHtml);                             //   re-estabilsh paging buttons
-
-    }
-
-    showPage(eventType);
-
-};
-
-//  *********************************************************************************
-//  *********************************************************************************
-//  First Pass Processing
-//  *********************************************************************************
-//  *********************************************************************************
-
-$('.page-header').append(searchHtml);                     //  set up the search capability (searchbox and button)
-buildPagingSet();
-showPage(eventType);
+buildPaging(listClone);                                 //  build the page
+debugger;
 //  event listeners
-document.getElementById("searchVal").addEventListener("keydown",keydownListener,true);
-document.getElementById("paging").addEventListener("click",clickListener,true);
+clickListener();
+keypressListener();
+//document.getElementById("student-search").addEventListener("keypress",keypressListener);
+//document.getElementById("paging").addEventListener("click",clickListener);
 
