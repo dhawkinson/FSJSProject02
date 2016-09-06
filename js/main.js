@@ -20,6 +20,7 @@ var currPage = 1;                                            //   the current pa
 var pagingHtml = '';                                         //   global because it needs to be preserved
 var keyPressed = false;                                      //   flag to identify keypress (name search) function
 var listClone =  $(".student-list > li").clone();            //   full student list clone from the <li>s
+var reset = true;                                            //   display reset flag
 
 // *********************************************************************************
 //  setup searchHtml -- slight variance from initial file
@@ -55,9 +56,7 @@ function initializeFullDisplay() {
 
     listClone.each(function(index) {
         $(this).attr("class", "student-item cf display");    //  identify all students as eligible for display
-        $(this).removeAttr("style");                         //  clear style attribute
     });
-    showSetCount = 0;                                        //  number to show in selected set
 
     buildPaging(listClone);                                  //  build the page
 }
@@ -67,15 +66,15 @@ function initializeFullDisplay() {
 function buildPaging(clone) {
     $(".noMatch").remove();                                       // remove the noMatch message if it was appended from a previous search
     $(".pageNav").empty();                                        // clear the pagination links class div
+    showSetCount = 0
     clone.each(function(index) {
         if ($(this).attr("class") === "student-item cf display") {
             $(this).attr("id", "show-"+showSetCount);
-            showSetCount +=1;                                    // count the display elements
+            showSetCount += 1;
         }
     });
-
-    // if search comes back with no results, append message to the list stating to the effect
-    if ( (showSetCount - 1) === 0 ) {
+    // if search comes back with no results, append "NO MATCH" message
+    if ( (showSetCount) === 0 ) {
         $("#student-search").append("<p class='noMatch'>NO MATCHES FOUND.</p>");
     }
     // count total number of page links required for pagination
@@ -116,13 +115,18 @@ function showPage(clone) {                                           //  shows t
     var showLast = ( showFirst + showOnPage );                       //  set last display position
 
     clone.each(function() {
-        //listClone.css( "opacity", 1);                                //  overcome transparency from fadeIn function
         var showCount = $(this)[0].id.split('-')[1];                 //  split out showCount
         showCount = parseInt(showCount,10);                          //  convert to an integer
         if ( (! isNaN(showCount )) && showCount >= showFirst && showCount < showLast ) {      //  this is an actual display item
-            $(this).show(500);                                      //  show with 1 sec fade in
+            if ( reset || keyPressed ) {
+                $(this).show();                                      //  show without fade in
+            } else {
+                $(this).show('slow');                                //  show with slow fade in
+            }
         }
     });
+    reset = false;
+    keyPressed = false;
     showSetCount = 0;                                                //  initialize for next page display
 }
 
@@ -156,6 +160,7 @@ function clickListener() {
         if ( clickSel === 'reset' ) {                           //  Reset Paging (going back to first page)
             currPage = 1;
             keyPressed = false;
+            reset=true;
             initializeFullDisplay();
         }
 
@@ -176,38 +181,30 @@ function clickListener() {
 function keypressListener() {
     searchStr = '';
 
-    $('.page-header').on('keypress', '.searchVal', function(k) {
-        k.preventDefault();
+    $('.page-header').on('keypress', '.searchVal', function(e) {
+        e.preventDefault();
         keyPressed = true;
-        searchStr += k.key;                                                             //  grab key value from text input field
+        searchStr += String.fromCharCode(e.which);
+        //  grab key value from text input field
         $(".pageNav > ul > li > a").attr("href", "#");                                  //  reset to page 1 of pagination
         $(".pageNav > ul > li:first-child > a").attr("class", "active");                //  first student in list
 
-        //  explanation of why I used RegExp
-        //      Though not specifically required or specified
-        //      RegExp offers a more flexible style of search
-        //      in that the pattern being matched on the target element
-        //      can be present anywhere in the string
-
-        var ptrnMatch = new RegExp(searchStr,"i");                          //  for pattern/character matching, case insensitive
         listClone.each(function(index) {                                    //  looping through each li element in the local list clone
             $(this).removeAttr("id");                                       //  clear pre-applied IDs
             $(this).removeClass("display");                                 //  clear pre-applied class of display
-            $(this).removeAttr("style");                                    //  clear style attribute
             var name = $(this).find("h3").text();                           //  get the name
             var email = $(this).find(".email").text().split('@')[0];        //  get the name portion of email
             var searchVal = name + " " + email;                             //  concatentate for single search
-            if (searchVal.match(ptrnMatch) !== null) {                      //  if there is a match
-                $(this).addClass("display");                                //  mark for display
+            var found = searchVal.indexOf(searchStr)                        //  test for presence of input string
+            if ( found !== -1 ) {                                           //  if search string is found
+                $(this).addClass("display");
             }
-
         });
         buildPaging(listClone);
 
     });
-}     //  end of keypress function
+}     //  end of keydown function
 
 // ******************************************************
 // end of function definitions
 // ******************************************************
-
