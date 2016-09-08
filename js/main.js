@@ -180,21 +180,19 @@ function clickListener() {
 
 function keypressListener() {
     searchStr = '';
-
-    $('.page-header').on('keypress', '.searchVal', function(e) {
+    $('.page-header').on('keyup', '.searchVal', function(e) {
         e.preventDefault();
         keyPressed = true;
-        searchStr += String.fromCharCode(e.which);
+        searchStr += (String.fromCharCode(e.which)).toLowerCase();
         //  grab key value from text input field
-        $(".pageNav > ul > li > a").attr("href", "#");                                  //  reset to page 1 of pagination
-        $(".pageNav > ul > li:first-child > a").attr("class", "active");                //  first student in list
-
+        $(".pageNav > ul > li > a").attr("href", "#");                      //  reset to page 1 of pagination
+        $(".pageNav > ul > li:first-child > a").attr("class", "active");    //  first student in list
         listClone.each(function(index) {                                    //  looping through each li element in the local list clone
             $(this).removeAttr("id");                                       //  clear pre-applied IDs
             $(this).removeClass("display");                                 //  clear pre-applied class of display
             var name = $(this).find("h3").text();                           //  get the name
             var email = $(this).find(".email").text().split('@')[0];        //  get the name portion of email
-            var searchVal = name + " " + email;                             //  concatentate for single search
+            var searchVal = (name + " " + email).toLowerCase();                             //  concatentate for single search
             var found = searchVal.indexOf(searchStr)                        //  test for presence of input string
             if ( found !== -1 ) {                                           //  if search string is found
                 $(this).addClass("display");
