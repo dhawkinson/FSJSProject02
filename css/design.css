@@ -23,11 +23,11 @@ body{
     color: #555;
 }
 
-.page-header #student-search{
+.page-header .student-search{
     float: right;
 }
 
-.page-header #student-search input{
+.page-header .student-search input{
     color: #d1d1e0;
     border-radius: 5px;
     border: 1px solid #eaeaea;
@@ -35,24 +35,25 @@ body{
     font-size: 14px;
 }
 
-.page-header #student-search button{
+.page-header .student-search button{
     border-radius: 5px;
     border: 1px solid #eaeaea;
     padding: 8px 15px;
     font-size: 14px;
     background-color: #4ba6c3;
-    color: #fff
+    color: #fff;
 }
 
-#student-search p.noMatch {
+.student-search p.noMatch {
     margin-top: 1em;
     text-align: center;
-    color:red;
+    color: red;
 }
 
 .student-item{
-    margin: 0 0 15px 0;
-    padding: 0 0 15px 0;
+    list-style: none;
+    margin: 0 0 10px 0;
+    padding: 0 0 10px 0;
     border-bottom: 1px solid #eaeaea;
 }
 
