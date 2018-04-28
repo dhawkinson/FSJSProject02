@@ -1,4 +1,4 @@
-# FSJSProject02
+# TH02-Student-Roster
 Full Stack Java Script Project 02 - Treehouse TechDegree
 
 9 Steps to complete:
